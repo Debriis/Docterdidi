@@ -5,6 +5,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import api from '@/lib/axios';
 import { QRCodeCanvas } from 'qrcode.react';
 import { FileText, Plus, X, Download, QrCode, AlertCircle, CheckCircle2, Pill, ChevronDown, UploadCloud } from 'lucide-react';
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 interface Patient { id: string; name: string; age: number; phone: string; }
 interface Prescription {
@@ -17,7 +19,7 @@ interface Prescription {
   instructions: string;
   is_active: boolean;
   created_at: string;
-  patients: Patient; // from Supabase joined
+  patients: Patient;
 }
 
 const timingColors: Record<string, string> = {
@@ -35,7 +37,9 @@ export default function PrescriptionsPage() {
   const [showQR, setShowQR] = useState<Prescription | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const qrRef = useRef<HTMLDivElement>(null);
+
+  // ✅ ONE ref — attached to the printable area inside the QR modal
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState({
     patient_id: '', medicine_name: '', dosage: '', timing: 'morning', custom_timing: '', duration: '', instructions: '',
@@ -87,31 +91,45 @@ export default function PrescriptionsPage() {
     }
   };
 
-  const downloadQR = () => {
-    const canvas = qrRef.current?.querySelector('canvas');
-    if (!canvas) return;
-    const url = canvas.toDataURL('image/png');
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `prescription-${showQR?.id}.png`;
-    a.click();
+  // ✅ pdfRef wraps the QR + details block — html2canvas captures it perfectly
+  const downloadPDF = async () => {
+    if (!pdfRef.current || !showQR) return;
+
+    const canvas = await html2canvas(pdfRef.current, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const imgWidth = 190;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+    pdf.save(`prescription-${showQR.id}.pdf`);
   };
 
-  const getQRData = (p: Prescription) =>
-    JSON.stringify({
+  // ✅ Typed, handles custom timing
+  const getQRData = (p: Prescription): string => {
+    return JSON.stringify({
       id: p.id,
       patient: p.patients?.name,
       medicine: p.medicine_name,
       dosage: p.dosage,
-      timing: p.timing === 'custom' ? p.custom_timing : p.timing,
+      timing: p.timing === 'custom' && p.custom_timing ? p.custom_timing : p.timing,
       duration: p.duration,
       instructions: p.instructions,
       issuedAt: p.created_at,
     });
+  };
 
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 fade-in">
+
         {/* Toast */}
         {toast && (
           <div style={{
@@ -201,7 +219,7 @@ export default function PrescriptionsPage() {
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button id={`qr-btn-${p.id}`} onClick={() => setShowQR(p)} className="btn-secondary"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', background: '#F3F4F6', color: '#111827', fontSize: '0.85rem', fontWeight: 500, textDecoration: 'none' }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', background: '#F3F4F6', color: '#111827', fontSize: '0.85rem', fontWeight: 500 }}
                   >
                     <QrCode size={16} /> QR Code
                   </button>
@@ -227,18 +245,12 @@ export default function PrescriptionsPage() {
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><X size={24} /></button>
             </div>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* UPLOAD BOX (Visual Addon as requested by user) */}
-              <div style={{ 
-                border: '2px dashed #D1D5DB', 
-                borderRadius: '16px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                padding: '40px 0', 
-                background: '#FFFFFF',
-                marginBottom: '10px'
+
+              {/* Upload Box */}
+              <div style={{
+                border: '2px dashed #D1D5DB', borderRadius: '16px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: '40px 0', background: '#FFFFFF', marginBottom: '10px'
               }}>
                 <UploadCloud size={48} color="#9CA3AF" style={{ marginBottom: '16px' }} />
                 <p className="font-serif" style={{ fontSize: '1.25rem', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>Drop prescription here</p>
@@ -317,30 +329,54 @@ export default function PrescriptionsPage() {
         </div>
       )}
 
-      {/* QR Code Modal */}
+      {/* ✅ QR Modal — pdfRef on printable area only, button outside so it won't appear in PDF */}
       {showQR && (
-        <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowQR(null)}>
-          <div className="modal-box" style={{ textAlign: 'center', maxWidth: '420px' }}>
+        <div className="modal-overlay" onClick={() => setShowQR(null)}>
+          <div
+            className="modal-box"
+            onClick={(e) => e.stopPropagation()}
+            style={{ textAlign: 'center', maxWidth: '420px', padding: '32px' }}
+          >
+            {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
               <h2 className="font-serif" style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <QrCode size={24} color="#C46A3C" /> Prescription QR
               </h2>
-              <button onClick={() => setShowQR(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}><X size={24} /></button>
+              <button onClick={() => setShowQR(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280' }}>
+                <X size={24} />
+              </button>
             </div>
 
-            <div ref={qrRef} style={{ border: '1px solid #E5E7EB', display: 'flex', justifyContent: 'center', padding: '24px', background: '#FFFFFF', borderRadius: '16px', marginBottom: '24px' }}>
-              <QRCodeCanvas value={getQRData(showQR)} size={240} level="M" />
+            {/* ✅ pdfRef here — only this block gets captured by html2canvas */}
+            <div ref={pdfRef} style={{ background: '#ffffff', padding: '24px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                <QRCodeCanvas
+                  value={getQRData(showQR)}
+                  size={200}
+                  bgColor="#ffffff"
+                  fgColor="#000000"
+                />
+              </div>
+              <div style={{ textAlign: 'left', fontSize: '0.9rem', color: '#111827' }}>
+                <p style={{ marginBottom: '6px' }}><strong>Patient:</strong> {showQR.patients?.name}</p>
+                <p style={{ marginBottom: '6px' }}><strong>Medicine:</strong> {showQR.medicine_name}</p>
+                <p style={{ marginBottom: '6px' }}><strong>Dosage:</strong> {showQR.dosage}</p>
+                <p style={{ marginBottom: '6px' }}><strong>Timing:</strong> {showQR.timing === 'custom' && showQR.custom_timing ? showQR.custom_timing : showQR.timing}</p>
+                <p style={{ marginBottom: '6px' }}><strong>Duration:</strong> {showQR.duration}</p>
+                {showQR.instructions && (
+                  <p><strong>Instructions:</strong> {showQR.instructions}</p>
+                )}
+              </div>
             </div>
 
-            <p style={{ color: '#4B5563', fontSize: '1rem', marginBottom: '8px' }}>
-              <strong style={{ color: '#111827' }}>{showQR.medicine_name}</strong> — {showQR.patients?.name}
-            </p>
-            <p style={{ color: '#6B7280', fontSize: '0.85rem', marginBottom: '24px' }}>
-              Scan to view prescription details in JSON format
-            </p>
-
-            <button id="download-qr-btn" className="btn-primary" onClick={downloadQR} style={{ width: '100%', justifyContent: 'center', padding: '14px' }}>
-              <Download size={18} /> Download QR Code
+            {/* Download button — outside pdfRef so it won't show up in the PDF */}
+            <button
+              id="download-pdf-btn"
+              className="btn-primary"
+              onClick={downloadPDF}
+              style={{ width: '100%', marginTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px' }}
+            >
+              <Download size={18} /> Download Full Prescription PDF
             </button>
           </div>
         </div>

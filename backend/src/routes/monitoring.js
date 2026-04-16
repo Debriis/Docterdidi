@@ -8,13 +8,43 @@ router.use(authMiddleware);
 // GET logs
 router.get('/', async (req, res) => {
   try {
-    const { data: logs, error } = await supabase
+    // 1. Fetch raw monitoring logs
+    const { data: logsData, error: logsError } = await supabase
       .from('monitoring')
-      .select('*, patients(id, name, age, phone), prescriptions(id, medicine_name, dosage, timing)')
+      .select('*')
       .eq('doctor_id', req.doctor.id)
-      .order('scheduled_date', { ascending: true });
+      .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (logsError) {
+      console.error(logsError);
+      return res.status(500).json({ message: logsError.message });
+    }
+
+    // 2. Fetch all patients and prescriptions for this doctor to bind in memory
+    // This perfectly bypasses PGRST200 relation issues while maintaining frontend support!
+    const { data: patientsData } = await supabase.from('patients').select('*').eq('doctor_id', req.doctor.id);
+    const { data: prescriptionsData } = await supabase.from('prescriptions').select('*').eq('doctor_id', req.doctor.id);
+
+    const patientsMap = {};
+    if (patientsData) {
+      patientsData.forEach(p => { patientsMap[p.id] = p; });
+    }
+
+    const presMap = {};
+    if (prescriptionsData) {
+      prescriptionsData.forEach(p => { presMap[p.id] = p; });
+    }
+
+    // 3. Reconstruct logs array exactly as frontend expects
+    const logs = logsData.map(l => ({
+      ...l,
+      id: l.id,
+      status: l.status,
+      scheduled_date: l.created_at,
+      taken_at: l.taken_at,
+      patients: patientsMap[l.patient_id] || { name: 'Unknown' },
+      prescriptions: presMap[l.prescription_id] || { medicine_name: 'Unknown', dosage: 'Unknown', timing: 'Unknown' }
+    }));
 
     const summary = {
       total: logs.length,
@@ -25,7 +55,7 @@ router.get('/', async (req, res) => {
 
     res.json({ logs, summary });
   } catch (err) {
-    console.error("MONITOR ERROR:", err);
+    console.error("MONITOR GET ERROR:", err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -34,15 +64,28 @@ router.get('/', async (req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { status } = req.body;
-    const { data: log, error } = await supabase
+    const { data: logRaw, error } = await supabase
       .from('monitoring')
       .update({ status, taken_at: status === 'Taken' ? new Date() : null })
       .eq('id', req.params.id)
       .eq('doctor_id', req.doctor.id)
-      .select('*, patients(id, name, age, phone), prescriptions(id, medicine_name, dosage, timing)')
+      .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ message: error.message });
+    }
+
+    // Fetch singular items for binding
+    const { data: patient } = await supabase.from('patients').select('*').eq('id', logRaw.patient_id).maybeSingle();
+    const { data: pres } = await supabase.from('prescriptions').select('*').eq('id', logRaw.prescription_id).maybeSingle();
+
+    const log = {
+      ...logRaw,
+      patients: patient || { name: 'Unknown' },
+      prescriptions: pres || { medicine_name: 'Unknown', dosage: 'Unknown', timing: 'Unknown' }
+    };
 
     res.json({ log });
   } catch (err) {
