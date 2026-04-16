@@ -3,104 +3,51 @@ const supabase = require('../config/supabase');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
-
-// Helper to map Supabase structure to Mongoose-like structure
-const mapLog = (l) => {
-  if (!l) return null;
-  const res = { ...l, _id: l.id };
-  if (res.patients) {
-    res.patientId = { ...res.patients, _id: res.patients.id };
-    delete res.patients;
-  }
-  if (res.prescriptions) {
-    res.prescriptionId = { ...res.prescriptions, _id: res.prescriptions.id };
-    delete res.prescriptions;
-  }
-  return res;
-};
-
-// All routes require auth
 router.use(authMiddleware);
 
-// @route  GET /api/monitoring
-// @desc   Get medication logs for the doctor — simulates real-time by randomly flipping Pending → Taken/Missed
+// GET logs
 router.get('/', async (req, res) => {
   try {
-    // Simulate real-time: randomly update Pending logs
-    const { data: pendingLogs, error: pendingError } = await supabase
-      .from('medicationLogs')
-      .select('id')
-      .eq('doctorId', req.doctor.id)
-      .eq('status', 'Pending');
-
-    if (pendingError) throw pendingError;
-
-    if (pendingLogs && pendingLogs.length > 0) {
-      const updatePromises = pendingLogs.map(async (log) => {
-        const rand = Math.random();
-        if (rand < 0.4) {
-          // 40% chance: mark as Taken
-          return supabase
-            .from('medicationLogs')
-            .update({ status: 'Taken', takenAt: new Date() })
-            .eq('id', log.id);
-        } else if (rand < 0.65) {
-          // 25% chance: mark as Missed
-          return supabase.from('medicationLogs').update({ status: 'Missed' }).eq('id', log.id);
-        }
-        return null;
-      });
-
-      await Promise.all(updatePromises.filter(Boolean));
-    }
-
-    // Fetch all logs with populated data
-    const { data: logsData, error } = await supabase
-      .from('medicationLogs')
-      .select('*, patients!patientId(id, name, age, phone), prescriptions!prescriptionId(id, medicineName, dosage, timing)')
-      .eq('doctorId', req.doctor.id)
-      .order('scheduledDate', { ascending: false })
-      .limit(50);
+    const { data: logs, error } = await supabase
+      .from('monitoring')
+      .select('*, patients(id, name, age, phone), prescriptions(id, medicine_name, dosage, timing)')
+      .eq('doctor_id', req.doctor.id)
+      .order('scheduled_date', { ascending: true });
 
     if (error) throw error;
 
-    const logs = logsData ? logsData.map(mapLog) : [];
+    const summary = {
+      total: logs.length,
+      taken: logs.filter(l => l.status === 'Taken').length,
+      missed: logs.filter(l => l.status === 'Missed').length,
+      pending: logs.filter(l => l.status === 'Pending').length,
+    };
 
-    // Summary stats
-    const total = logs.length;
-    const taken = logs.filter((l) => l.status === 'Taken').length;
-    const missed = logs.filter((l) => l.status === 'Missed').length;
-    const pending = logs.filter((l) => l.status === 'Pending').length;
-
-    res.json({ logs, summary: { total, taken, missed, pending } });
+    res.json({ logs, summary });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("MONITOR ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 
-// @route  PATCH /api/monitoring/:id
-// @desc   Manually update a medication log status
+// UPDATE log status
 router.patch('/:id', async (req, res) => {
   try {
     const { status } = req.body;
-    if (!['Taken', 'Missed', 'Pending'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-
     const { data: log, error } = await supabase
-      .from('medicationLogs')
-      .update({ status, takenAt: status === 'Taken' ? new Date() : null })
+      .from('monitoring')
+      .update({ status, taken_at: status === 'Taken' ? new Date() : null })
       .eq('id', req.params.id)
-      .eq('doctorId', req.doctor.id)
-      .select('*, patients!patientId(id, name, age, phone), prescriptions!prescriptionId(id, medicineName, dosage, timing)')
-      .maybeSingle();
+      .eq('doctor_id', req.doctor.id)
+      .select('*, patients(id, name, age, phone), prescriptions(id, medicine_name, dosage, timing)')
+      .single();
 
     if (error) throw error;
-    if (!log) return res.status(404).json({ message: 'Log not found' });
-    
-    res.json({ message: 'Status updated', log: mapLog(log) });
+
+    res.json({ log });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error("MONITOR UPDATE ERROR:", err);
+    res.status(500).json({ message: err.message });
   }
 });
 

@@ -12,9 +12,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <AuthProvider>
-          {/* Background blobs */}
-          <div className="blob blob-1" />
-          <div className="blob blob-2" />
           <div style={{ position: 'relative', zIndex: 1 }}>{children}</div>
         </AuthProvider>
       </body>

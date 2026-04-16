@@ -29,26 +29,25 @@ export default function Sidebar() {
       style={{
         width: '260px',
         minHeight: '100vh',
-        background: 'rgba(15, 23, 42, 0.95)',
-        borderRight: '1px solid rgba(99, 102, 241, 0.12)',
+        background: '#FFFFFF',
+        borderRight: '1px solid #E5E7EB',
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 16px',
+        padding: '32px 20px',
         position: 'fixed',
         top: 0,
         left: 0,
         zIndex: 50,
-        backdropFilter: 'blur(20px)',
       }}
     >
       {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0 8px 28px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 8px 32px' }}>
         <div
           style={{
             width: '40px',
             height: '40px',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            borderRadius: '12px',
+            background: '#C46A3C',
+            borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -57,16 +56,13 @@ export default function Sidebar() {
           <Pill size={20} color="white" />
         </div>
         <div>
-          <div style={{ fontWeight: 800, fontSize: '1rem', color: '#f1f5f9' }}>Pill-Pal</div>
-          <div style={{ fontSize: '0.7rem', color: '#6366f1', fontWeight: 600, letterSpacing: '0.05em' }}>DOCTOR DASHBOARD</div>
+          <div className="font-serif" style={{ fontWeight: 700, fontSize: '1.25rem', color: '#111827' }}>Pill-Pal</div>
+          <div style={{ fontSize: '0.65rem', color: '#6B7280', fontWeight: 600, letterSpacing: '0.1em' }}>DOCTOR DASHBOARD</div>
         </div>
       </div>
 
-      {/* Divider */}
-      <div style={{ height: '1px', background: 'rgba(51, 65, 85, 0.5)', marginBottom: '20px' }} />
-
       {/* Nav */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = pathname === href;
           return (
@@ -77,33 +73,31 @@ export default function Sidebar() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
-                padding: '11px 14px',
-                borderRadius: '10px',
+                padding: '12px 16px',
+                borderRadius: '8px',
                 textDecoration: 'none',
                 fontWeight: active ? 600 : 500,
-                fontSize: '0.875rem',
-                color: active ? '#f1f5f9' : '#94a3b8',
-                background: active ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(139,92,246,0.15))' : 'transparent',
-                border: active ? '1px solid rgba(99,102,241,0.25)' : '1px solid transparent',
+                fontSize: '0.95rem',
+                color: active ? '#C46A3C' : '#4B5563',
+                background: active ? '#F8F5F1' : 'transparent',
                 transition: 'all 0.2s ease',
-                position: 'relative',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
-                  (e.currentTarget as HTMLElement).style.background = 'rgba(99,102,241,0.08)';
-                  (e.currentTarget as HTMLElement).style.color = '#f1f5f9';
+                  (e.currentTarget as HTMLElement).style.background = '#F9FAFB';
+                  (e.currentTarget as HTMLElement).style.color = '#111827';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!active) {
                   (e.currentTarget as HTMLElement).style.background = 'transparent';
-                  (e.currentTarget as HTMLElement).style.color = '#94a3b8';
+                  (e.currentTarget as HTMLElement).style.color = '#4B5563';
                 }
               }}
             >
-              <Icon size={18} color={active ? '#818cf8' : 'currentColor'} />
+              <Icon size={18} color={active ? '#C46A3C' : '#9CA3AF'} />
               {label}
-              {active && <ChevronRight size={14} style={{ marginLeft: 'auto', color: '#6366f1' }} />}
+              {active && <ChevronRight size={16} style={{ marginLeft: 'auto', color: '#C46A3C' }} />}
             </Link>
           );
         })}
@@ -111,11 +105,10 @@ export default function Sidebar() {
 
       {/* Doctor profile + logout */}
       <div style={{ marginTop: 'auto' }}>
-        <div style={{ height: '1px', background: 'rgba(51, 65, 85, 0.5)', marginBottom: '16px' }} />
-        <div style={{ padding: '12px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '12px', marginBottom: '12px' }}>
-          <div style={{ fontSize: '0.875rem', fontWeight: 600, color: '#f1f5f9' }}>{doctor?.name || 'Doctor'}</div>
-          <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>{doctor?.specialty || 'General Practitioner'}</div>
-          <div style={{ fontSize: '0.7rem', color: '#6366f1', marginTop: '2px' }}>{doctor?.email}</div>
+        <div style={{ padding: '16px', background: '#F9FAFB', borderRadius: '12px', marginBottom: '16px', border: '1px solid #E5E7EB' }}>
+          <div className="font-serif" style={{ fontSize: '1rem', fontWeight: 600, color: '#111827' }}>{doctor?.name || 'Doctor'}</div>
+          <div style={{ fontSize: '0.8rem', color: '#6B7280', marginTop: '4px' }}>{doctor?.specialty || 'General Practitioner'}</div>
+          <div style={{ fontSize: '0.75rem', color: '#C46A3C', marginTop: '4px' }}>{doctor?.email}</div>
         </div>
         <button
           onClick={logout}
@@ -125,20 +118,20 @@ export default function Sidebar() {
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            padding: '10px 14px',
-            borderRadius: '10px',
-            background: 'rgba(239, 68, 68, 0.08)',
-            border: '1px solid rgba(239, 68, 68, 0.2)',
-            color: '#ef4444',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            background: '#FEF2F2',
+            border: '1px solid #FECACA',
+            color: '#EF4444',
             fontWeight: 500,
-            fontSize: '0.875rem',
+            fontSize: '0.9rem',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
           }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.15)'; }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)'; }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#FEE2E2'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '#FEF2F2'; }}
         >
-          <LogOut size={16} />
+          <LogOut size={16} color="#EF4444" />
           Sign Out
         </button>
       </div>

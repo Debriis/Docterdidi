@@ -21,13 +21,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ textAlign: 'center' }}>
           <div style={{
             width: '48px', height: '48px',
-            border: '3px solid rgba(99,102,241,0.2)',
-            borderTopColor: '#6366f1',
+            border: '3px solid #E5E7EB',
+            borderTopColor: '#C46A3C',
             borderRadius: '50%',
             animation: 'spin 0.8s linear infinite',
             margin: '0 auto 16px',
           }} />
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Loading...</p>
+          <p style={{ color: '#6B7280', fontSize: '1rem', fontWeight: 500 }}>Loading...</p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
       </div>

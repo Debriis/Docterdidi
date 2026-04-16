@@ -10,7 +10,11 @@ const monitoringRoutes = require('./src/routes/monitoring');
 const app = express();
 
 // Middleware
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+}));
+
 app.use(express.json());
 
 // Routes
@@ -19,8 +23,10 @@ app.use('/api/patients', patientRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/monitoring', monitoringRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => res.json({ status: 'OK', message: 'Pill-Pal API is running' }));
+// Health
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK' });
+});
 
 const PORT = process.env.PORT || 5000;
 

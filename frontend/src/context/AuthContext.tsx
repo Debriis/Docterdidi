@@ -29,13 +29,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('pill_pal_token');
-    const savedDoctor = localStorage.getItem('pill_pal_doctor');
-    if (savedToken && savedDoctor) {
-      setToken(savedToken);
-      setDoctor(JSON.parse(savedDoctor));
-    }
-    setLoading(false);
+    const checkAuth = async () => {
+      const savedToken = localStorage.getItem('pill_pal_token');
+      if (savedToken) {
+        try {
+          const res = await api.get('/auth/me');
+          setToken(savedToken);
+          setDoctor(res.data.doctor);
+          // Sync fresh data back to localStorage for instant hydration logic
+          localStorage.setItem('pill_pal_doctor', JSON.stringify(res.data.doctor));
+        } catch (error) {
+          console.error("Auth check failed:", error);
+          localStorage.removeItem('pill_pal_token');
+          localStorage.removeItem('pill_pal_doctor');
+          setToken(null);
+          setDoctor(null);
+        }
+      }
+      setLoading(false);
+    };
+    
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string) => {

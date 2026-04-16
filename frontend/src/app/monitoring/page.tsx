@@ -6,12 +6,12 @@ import api from '@/lib/axios';
 import { Activity, RefreshCw, CheckCircle2, AlertTriangle, Clock, Wifi } from 'lucide-react';
 
 interface LogEntry {
-  _id: string;
+  id: string;
   status: 'Taken' | 'Missed' | 'Pending';
-  scheduledDate: string;
-  takenAt: string | null;
-  patientId: { _id: string; name: string; age: number; phone: string };
-  prescriptionId: { _id: string; medicineName: string; dosage: string; timing: string };
+  scheduled_date: string;
+  taken_at: string | null;
+  patients: { id: string; name: string; age: number; phone: string };
+  prescriptions: { id: string; medicine_name: string; dosage: string; timing: string };
 }
 
 interface Summary { total: number; taken: number; missed: number; pending: number; }
@@ -51,9 +51,9 @@ export default function MonitoringPage() {
     setUpdating(logId);
     try {
       const res = await api.patch(`/monitoring/${logId}`, { status: newStatus });
-      setLogs((prev) => prev.map((l) => (l._id === logId ? res.data.log : l)));
+      setLogs((prev) => prev.map((l) => (l.id === logId ? res.data.log : l)));
       setSummary((prev) => {
-        const oldLog = logs.find((l) => l._id === logId);
+        const oldLog = logs.find((l) => l.id === logId);
         const updated = { ...prev };
         if (oldLog) {
           const oldKey = oldLog.status.toLowerCase() as keyof Summary;
@@ -80,72 +80,72 @@ export default function MonitoringPage() {
 
   return (
     <DashboardLayout>
-      <div className="fade-in">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 fade-in">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px', flexWrap: 'wrap', gap: '20px' }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f1f5f9', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Activity size={22} color="#818cf8" /> Medication Monitoring
+            <h1 className="font-serif" style={{ fontSize: '2.5rem', fontWeight: 700, color: '#111827', display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-0.02em' }}>
+              <Activity size={32} color="#C46A3C" /> Medication Monitoring
             </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span className="pulse-dot" style={{ background: isPolling ? '#10b981' : '#64748b' }} />
-                <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{isPolling ? 'Live polling every 8s' : 'Polling paused'}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="pulse-dot" style={{ background: isPolling ? '#10b981' : '#9CA3AF' }} />
+                <span style={{ color: '#6B7280', fontSize: '0.9rem' }}>{isPolling ? 'Live polling every 8s' : 'Polling paused'}</span>
               </div>
               {lastUpdated && (
-                <span style={{ color: '#64748b', fontSize: '0.75rem' }}>
+                <span style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
                   Last updated: {lastUpdated.toLocaleTimeString()}
                 </span>
               )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button
               onClick={() => setIsPolling((p) => !p)}
               style={{
-                display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
-                background: isPolling ? 'rgba(16,185,129,0.1)' : 'rgba(100,116,139,0.1)',
-                border: `1px solid ${isPolling ? 'rgba(16,185,129,0.3)' : 'rgba(100,116,139,0.3)'}`,
-                borderRadius: '10px', color: isPolling ? '#10b981' : '#64748b',
-                fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s ease',
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+                background: isPolling ? '#ECFDF5' : '#F3F4F6',
+                border: `1px solid ${isPolling ? '#A7F3D0' : '#E5E7EB'}`,
+                borderRadius: '8px', color: isPolling ? '#059669' : '#6B7280',
+                fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.2s ease',
               }}
             >
-              <Wifi size={14} />
+              <Wifi size={16} />
               {isPolling ? 'Polling On' : 'Polling Off'}
             </button>
-            <button id="refresh-monitoring-btn" className="btn-secondary" onClick={() => fetchMonitoring()}>
-              <RefreshCw size={15} style={{ animation: loading ? 'spin 0.8s linear infinite' : 'none' }} />
+            <button id="refresh-monitoring-btn" className="btn-secondary" style={{ border: '1px solid #E5E7EB', background: '#FFFFFF' }} onClick={() => fetchMonitoring()}>
+              <RefreshCw size={16} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
               Refresh
             </button>
           </div>
         </div>
 
         {/* Summary Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(180px, 1fr))', gap: '20px', marginBottom: '40px' }}>
           {[
-            { label: 'Total Logs', val: summary.total, color: '#818cf8', bg: 'rgba(99,102,241,0.1)' },
-            { label: 'Taken', val: summary.taken, color: '#10b981', bg: 'rgba(16,185,129,0.1)' },
-            { label: 'Missed', val: summary.missed, color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
-            { label: 'Pending', val: summary.pending, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+            { label: 'Total Logs', val: summary.total, color: '#374151', bg: '#F9FAFB' },
+            { label: 'Taken', val: summary.taken, color: '#059669', bg: '#ECFDF5' },
+            { label: 'Missed', val: summary.missed, color: '#DC2626', bg: '#FEF2F2' },
+            { label: 'Pending', val: summary.pending, color: '#D97706', bg: '#FFFBEB' },
           ].map(({ label, val, color, bg }) => (
-            <div key={label} style={{ background: bg, border: `1px solid ${color}30`, borderRadius: '14px', padding: '18px 20px' }}>
-              <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color, marginTop: '4px' }}>{val}</div>
+            <div key={label} style={{ background: bg, border: `1px solid #E5E7EB`, borderRadius: '16px', padding: '24px' }}>
+              <div style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+              <div className="font-serif" style={{ fontSize: '2.5rem', fontWeight: 700, color, marginTop: '8px' }}>{val}</div>
             </div>
           ))}
         </div>
 
         {/* Logs Table */}
-        <div className="glass-card" style={{ overflow: 'hidden' }}>
+        <div className="premium-card" style={{ overflow: 'hidden', padding: 0 }}>
           {loading ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>
-              <div style={{ width: '40px', height: '40px', border: '3px solid rgba(99,102,241,0.2)', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ padding: '80px', textAlign: 'center', color: '#6B7280' }}>
+              <div style={{ width: '44px', height: '44px', border: '3px solid #E5E7EB', borderTopColor: '#C46A3C', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
               Loading medication logs...
             </div>
           ) : logs.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center' }}>
-              <Activity size={48} color="#334155" style={{ margin: '0 auto 12px' }} />
-              <p style={{ color: '#64748b', fontWeight: 500 }}>No medication logs yet. Create prescriptions to start monitoring.</p>
+            <div style={{ padding: '80px', textAlign: 'center' }}>
+              <Activity size={56} color="#D1D5DB" style={{ margin: '0 auto 16px' }} />
+              <p style={{ color: '#6B7280', fontWeight: 500, fontSize: '1.125rem' }}>No medication logs yet. Create prescriptions to start monitoring.</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -165,43 +165,43 @@ export default function MonitoringPage() {
                   {logs.map((log, i) => {
                     const { badge, icon, label } = getStatusStyles(log.status);
                     return (
-                      <tr key={log._id} style={{ animationDelay: `${i * 0.03}s` }}>
+                      <tr key={log.id} style={{ animationDelay: `${i * 0.04}s` }}>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{
-                              width: '30px', height: '30px', borderRadius: '8px',
-                              background: `linear-gradient(135deg, hsl(${(i * 53) % 360},65%,38%), hsl(${(i * 53 + 40) % 360},65%,28%))`,
+                              width: '32px', height: '32px', borderRadius: '8px',
+                              background: '#F8F5F1',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: 'white', fontWeight: 700, fontSize: '0.75rem', flexShrink: 0,
+                              color: '#C46A3C', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0,
                             }}>
-                              {log.patientId?.name?.charAt(0) || '?'}
+                              {log.patients?.name?.charAt(0) || '?'}
                             </div>
-                            <span style={{ color: '#f1f5f9', fontWeight: 500 }}>{log.patientId?.name || 'Unknown'}</span>
+                            <span style={{ color: '#111827', fontWeight: 600 }}>{log.patients?.name || 'Unknown'}</span>
                           </div>
                         </td>
-                        <td style={{ color: '#f1f5f9', fontWeight: 500 }}>{log.prescriptionId?.medicineName || '—'}</td>
-                        <td>{log.prescriptionId?.dosage || '—'}</td>
-                        <td style={{ textTransform: 'capitalize' }}>{log.prescriptionId?.timing || '—'}</td>
-                        <td>{new Date(log.scheduledDate).toLocaleDateString()}</td>
+                        <td style={{ color: '#374151', fontWeight: 600 }}>{log.prescriptions?.medicine_name || '—'}</td>
+                        <td style={{ color: '#4B5563' }}>{log.prescriptions?.dosage || '—'}</td>
+                        <td style={{ textTransform: 'capitalize', color: '#4B5563' }}>{log.prescriptions?.timing || '—'}</td>
+                        <td style={{ color: '#4B5563' }}>{new Date(log.scheduled_date).toLocaleDateString()}</td>
                         <td>
-                          <span className={`badge ${badge}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span className={`badge ${badge}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px' }}>
                             {icon}{label}
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '6px' }}>
+                          <div style={{ display: 'flex', gap: '8px' }}>
                             {log.status !== 'Taken' && (
                               <button
-                                disabled={updating === log._id}
-                                onClick={() => updateStatus(log._id, 'Taken')}
-                                style={{ padding: '4px 10px', background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', color: '#10b981', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', opacity: updating === log._id ? 0.5 : 1, transition: 'all 0.2s ease' }}
+                                disabled={updating === log.id}
+                                onClick={() => updateStatus(log.id, 'Taken')}
+                                style={{ padding: '6px 12px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '6px', color: '#059669', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', opacity: updating === log.id ? 0.5 : 1, transition: 'all 0.2s ease' }}
                               >Taken</button>
                             )}
                             {log.status !== 'Missed' && (
                               <button
-                                disabled={updating === log._id}
-                                onClick={() => updateStatus(log._id, 'Missed')}
-                                style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '6px', color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', opacity: updating === log._id ? 0.5 : 1, transition: 'all 0.2s ease' }}
+                                disabled={updating === log.id}
+                                onClick={() => updateStatus(log.id, 'Missed')}
+                                style={{ padding: '6px 12px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#DC2626', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', opacity: updating === log.id ? 0.5 : 1, transition: 'all 0.2s ease' }}
                               >Missed</button>
                             )}
                           </div>

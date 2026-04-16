@@ -28,7 +28,7 @@ export default function DashboardPage() {
         ]);
         setStats({
           totalPatients: patientsRes.data.patients.length,
-          activePrescriptions: prescriptionsRes.data.prescriptions.filter((p: { isActive: boolean }) => p.isActive).length,
+          activePrescriptions: prescriptionsRes.data.prescriptions.filter((p: { is_active: boolean }) => p.is_active).length,
           missedDoses: monitoringRes.data.summary.missed,
           takenDoses: monitoringRes.data.summary.taken,
         });
@@ -46,74 +46,57 @@ export default function DashboardPage() {
       label: 'Total Patients',
       value: stats.totalPatients,
       icon: Users,
-      color: 'indigo',
-      iconColor: '#818cf8',
-      bg: 'rgba(99,102,241,0.1)',
-      desc: 'Registered under your care',
     },
     {
       label: 'Active Prescriptions',
       value: stats.activePrescriptions,
       icon: FileText,
-      color: 'teal',
-      iconColor: '#2dd4bf',
-      bg: 'rgba(20,184,166,0.1)',
-      desc: 'Currently active',
     },
     {
       label: 'Missed Doses',
       value: stats.missedDoses,
       icon: AlertTriangle,
-      color: 'red',
-      iconColor: '#f87171',
-      bg: 'rgba(239,68,68,0.1)',
-      desc: 'Requires attention',
     },
     {
       label: 'Doses Taken',
       value: stats.takenDoses,
       icon: CheckCircle2,
-      color: 'amber',
-      iconColor: '#fbbf24',
-      bg: 'rgba(245,158,11,0.1)',
-      desc: 'Successfully administered',
     },
   ];
 
   return (
     <DashboardLayout>
-      <div className="fade-in">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-24 fade-in">
         {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <span className="pulse-dot" />
-            <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600 }}>Live Dashboard</span>
+            <span style={{ color: '#10b981', fontSize: '0.875rem', fontWeight: 500 }}>Live System Active</span>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#f1f5f9' }}>
-            Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},{' '}
-            <span className="gradient-text">Dr. {doctor?.name?.split(' ').slice(-1)[0]}</span>
+          <h1 className="font-serif" style={{ fontSize: '3rem', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Welcome back, <br />
+            <span style={{ color: '#C46A3C' }}>Dr. {doctor?.name?.split(' ').slice(-1)[0]}</span>
           </h1>
-          <p style={{ color: '#64748b', marginTop: '4px', fontSize: '0.9rem' }}>
+          <p style={{ color: '#6B7280', marginTop: '12px', fontSize: '1.125rem' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
 
         {/* Stat Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '36px' }}>
-          {statCards.map(({ label, value, icon: Icon, color, iconColor, bg, desc }) => (
-            <div key={label} className={`stat-card ${color}`}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+          {statCards.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="premium-card">
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div>
-                  <p style={{ color: '#64748b', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</p>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: '#f1f5f9', lineHeight: 1.1, marginTop: '8px' }}>
+                  <p style={{ color: '#6B7280', fontSize: '0.875rem', fontWeight: 500 }}>{label}</p>
+                  <div className="font-serif" style={{ fontSize: '2.5rem', fontWeight: 700, color: '#111827', marginTop: '8px' }}>
                     {loading ? (
-                      <div style={{ width: '60px', height: '36px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', animation: 'pulse 1.5s infinite' }} />
+                      <div style={{ width: '60px', height: '36px', background: '#E5E7EB', borderRadius: '6px', animation: 'pulse 1.5s infinite' }} />
                     ) : value}
                   </div>
-                  <p style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '6px' }}>{desc}</p>
                 </div>
-                <div style={{ width: '48px', height: '48px', background: bg, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={22} color={iconColor} />
+                <div style={{ width: '48px', height: '48px', background: '#F8F5F1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon size={22} color="#C46A3C" />
                 </div>
               </div>
             </div>
@@ -121,25 +104,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick info banner */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))',
-          border: '1px solid rgba(99,102,241,0.2)',
-          borderRadius: '16px',
-          padding: '24px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '20px',
-          flexWrap: 'wrap',
-        }}>
-          <div style={{ width: '48px', height: '48px', background: 'rgba(99,102,241,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <TrendingUp size={22} color="#818cf8" />
+        <div className="premium-card" style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ width: '48px', height: '48px', background: '#F8F5F1', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <TrendingUp size={22} color="#C46A3C" />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, color: '#f1f5f9', fontSize: '1rem', marginBottom: '4px' }}>Monitoring is running</div>
-            <div style={{ color: '#64748b', fontSize: '0.875rem' }}>Patient medication statuses are automatically updated. Visit the Monitoring tab to see real-time details.</div>
+            <div className="font-serif" style={{ fontWeight: 600, color: '#111827', fontSize: '1.25rem', marginBottom: '4px' }}>Monitoring is running</div>
+            <div style={{ color: '#6B7280', fontSize: '0.95rem' }}>Patient medication statuses are automatically updated. Visit the Monitoring tab to see real-time details.</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8', fontSize: '0.8rem' }}>
-            <Clock size={14} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#9CA3AF', fontSize: '0.875rem' }}>
+            <Clock size={16} />
             Updated just now
           </div>
         </div>
